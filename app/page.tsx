@@ -1,103 +1,87 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useRef } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+export default function MapPage() {
+  const mapContainer = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+
+  useEffect(() => {
+    if (!mapContainer.current || mapRef.current) return;
+
+    // Init
+    const map = new maplibregl.Map({
+      container: mapContainer.current,
+      style: "http://localhost:8080/styles/bubbly/style.json",
+      center: [0, 0],
+      zoom: 2,
+      attributionControl: false,
+    });
+
+    mapRef.current = map;
+
+    // Controls
+    map.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: true }), "top-right");
+    map.addControl(new maplibregl.FullscreenControl(), "top-right");
+    map.addControl(new maplibregl.GeolocateControl({ 
+      positionOptions: { enableHighAccuracy: true }, 
+      trackUserLocation: true 
+    }), "top-right");
+    map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }));
+
+    const onError = (e: any) => console.error("Map error:", e);
+    const onLoad = () => {
+      console.log("Loaded map!");
+      const params = new URLSearchParams(window.location.search);
+      const lat = parseFloat(params.get("lat") || "");
+      const lng = parseFloat(params.get("lng") || "");
+      const zoom = parseFloat(params.get("zoom") || "");
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        map.flyTo({
+          center: [lng, lat],
+          zoom: !isNaN(zoom) ? zoom : 14,
+          essential: true
+        });
+      }
+    };
+
+    map.on("error", onError);
+    map.on("load", onLoad);
+
+    return () => {
+      map.off("error", onError);
+      map.off("load", onLoad);
+      map.remove();
+    };
+  }, []);
+
+  useEffect((): void | (() => void) => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const updateUrl = () => {
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      const params = new URLSearchParams(window.location.search);
+
+      params.set("lng", center.lng.toFixed(5));
+      params.set("lat", center.lat.toFixed(5));
+      params.set("zoom", zoom.toFixed(2));
+
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(null, "", newUrl);
+    };
+
+    map.on("moveend", updateUrl);
+    return () => map.off("moveend", updateUrl);
+  }, []);
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+    <div style={{ width: "100%", height: "100vh" }}>
+      <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 }
