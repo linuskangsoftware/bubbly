@@ -8,29 +8,84 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String?  @unique
+  displayName   String?
+  handle        String?   @unique
+  bio           String?
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
-  accounts      Account[]
-  sessions      Session[]
+  xp            Int       @default(0)
+  verified      Boolean   @default(false)
+  moderator     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  favorites Favorite[]
+  reviews   Review[]
+  bubblers  Bubbler[]
+}
+
+model Bubbler {
+  id            Int      @id @default(autoincrement())
+  name          String
+  latitude      Float
+  longitude     Float
+  description   String?
+  addedByUserId String?
+  addedBy       User?    @relation(fields: [addedByUserId], references: [id])
+  amenities     String[] @default([])
+  verified      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  image         String?
+  maintainer    String?
+
+  favorites Favorite[]
+  reviews   Review[]
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  bubblerId Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  bubbler   Bubbler  @relation(fields: [bubblerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bubblerId])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  bubblerId Int
+  userId    String
+  rating    Float    @default(0)
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bubbler Bubbler @relation(fields: [bubblerId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
-  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
