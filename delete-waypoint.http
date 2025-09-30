@@ -1,0 +1,2 @@
+DELETE http://localhost:3000/api/waypoints/5
+Authorization: Bearer linuskang@bubblyceo

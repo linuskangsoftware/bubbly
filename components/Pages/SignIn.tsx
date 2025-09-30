@@ -8,20 +8,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { HelpCircle } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { signIn, useSession } from "next-auth/react"
+import { signIn } from "next-auth/react"
 import { Logo } from "@/components/Logo"
 
 import ThemeToggle from "@/components/ThemeToggle"
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
-    const router = useRouter()
     const [email, setEmail] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const { data: session, status } = useSession()
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -105,6 +102,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                         variant="outline"
                         type="button"
                         className="w-full flex items-center justify-center gap-2 cursor-pointer bg-transparent"
+                        onClick={() => signIn("google", { callbackUrl: "/" })}
                         >
                         <svg
                             className="h-5 w-5"

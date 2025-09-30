@@ -1,6 +1,7 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { AuthOptions } from "next-auth"
 import EmailProvider from "next-auth/providers/email"
+import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
 import { Resend } from "resend"
 
@@ -9,8 +10,16 @@ const resend = new Resend(process.env.RESEND_API_KEY!)
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: { scope: "openid email profile" },
+      },
+    }),
+    
     EmailProvider({
-      async sendVerificationRequest({ identifier: email, url, provider }) {
+      async sendVerificationRequest({ identifier: email, url }) {
         await resend.emails.send({
           from: "Bubbly Team <bubbly@mail.linus.id.au>",
           to: email,
@@ -56,6 +65,17 @@ export const authOptions: AuthOptions = {
       maxAge: 10 * 60, // 10 minutes
     }),
   ],
+  callbacks: {
+    async session({ session, user }) {
+      if (session.user) {
+        session.user.id = user.id; // 👈 inject user.id into session
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: "/signin",
+  },
   session: { strategy: "database" },
   secret: process.env.NEXTAUTH_SECRET,
 }

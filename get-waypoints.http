@@ -1,0 +1,2 @@
+GET http://localhost:3000/api/waypoints?userId=cmg4ut2os0000zfx0646smbkr
+Content-Type: application/json
