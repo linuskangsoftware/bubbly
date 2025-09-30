@@ -5,6 +5,8 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { FeatureCollection, Point } from "geojson";
 
+import { Button } from "@/components/ui/button";
+
 type Bubbler = {
   id: number;
   name: string;
@@ -125,7 +127,14 @@ export default function MapPage() {
         source: "bubblers",
         filter: ["has", "point_count"],
         paint: {
-          "circle-color": "#00BFFF",
+          "circle-color": [
+            "step",
+            ["get", "point_count"],
+            "#60A5FA",
+            10, "#3B82F6",
+            50, "#2563EB",
+            100, "#1E3A8A",
+          ],
           "circle-radius": ["step", ["get", "point_count"], 15, 10, 20, 50, 25],
           "circle-stroke-width": 2,
           "circle-stroke-color": "#ffffff",
@@ -201,6 +210,12 @@ export default function MapPage() {
   return (
     <div style={{ width: "100%", height: "100vh" }}>
       <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+
+      <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+        <Button onClick={() => alert("Button clicked!")}>
+          Click Me
+        </Button>
+      </div>
     </div>
   );
 }
