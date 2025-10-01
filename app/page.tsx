@@ -8,6 +8,22 @@ import type { FeatureCollection, Point } from "geojson";
 import { SearchBar } from "@/components/Map/Search";
 import { MapScale } from "@/components/Map/Scale";
 
+import {
+  ContextMenu,
+  ContextMenuCheckboxItem,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+
 type Bubbler = {
   id: number;
   name: string;
@@ -20,6 +36,7 @@ export default function MapPage() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [bubblers, setBubblers] = useState<Bubbler[]>([]);
   const geolocateRef = useRef<maplibregl.GeolocateControl | null>(null);
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 
   // Fetch waypoints
   useEffect(() => {
@@ -91,10 +108,24 @@ export default function MapPage() {
     map.on("load", onLoad);
     map.on("moveend", updateUrl);
 
+    map.on("contextmenu", (e) => {
+      e.preventDefault();
+      setMenuPos({ x: e.point.x, y: e.point.y });
+
+      console.log(e.point)
+    });
+
     map.on("error", (e) => console.error("Map error:", e));
 
     return () => map.remove();
   }, []);
+
+  // later
+  useEffect(() => {
+    if (menuPos) {
+      console.log("Menu position updated:", menuPos);
+    }
+  }, [menuPos]);
 
   // WAYPOINT MANAGER //
   useEffect(() => {
