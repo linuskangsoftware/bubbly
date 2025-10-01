@@ -5,7 +5,8 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { FeatureCollection, Point } from "geojson";
 
-import { Button } from "@/components/ui/button";
+import { SearchBar } from "@/components/Map/Search";
+import { MapScale } from "@/components/Map/Scale";
 
 type Bubbler = {
   id: number;
@@ -18,6 +19,7 @@ export default function MapPage() {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [bubblers, setBubblers] = useState<Bubbler[]>([]);
+  const geolocateRef = useRef<maplibregl.GeolocateControl | null>(null);
 
   // Fetch waypoints
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function MapPage() {
       .catch(console.error);
   }, []);
 
-  // Initialize map
+  // MAP MANAGER //
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
@@ -41,13 +43,21 @@ export default function MapPage() {
 
     mapRef.current = map;
 
-    // Controls
-    map.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: true }), "top-right");
-    map.addControl(new maplibregl.FullscreenControl(), "top-right");
-    map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true }), "top-right");
-    map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }));
+    // MAP CONTROLS //
+    // GEOLOCATE //
+    const geolocate = new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true,
+    });
 
-    // Fly to location from URL params
+    geolocateRef.current = geolocate;
+    map.addControl(geolocate);
+    
+    //rm geo button
+    const el = document.querySelector(".maplibregl-ctrl-geolocate") as HTMLElement;
+    if (el) el.style.display = "none";
+
+    // Fly to location from URL
     const onLoad = () => {
       console.log("Bubbly map loaded.");
       const params = new URLSearchParams(window.location.search);
@@ -86,7 +96,7 @@ export default function MapPage() {
     return () => map.remove();
   }, []);
 
-  // Waypoints (initialise, handle user clicks)
+  // WAYPOINT MANAGER //
   useEffect(() => {
     const map = mapRef.current;
     if (!map || bubblers.length === 0) return;
@@ -207,15 +217,89 @@ export default function MapPage() {
     }
   }, [bubblers]);
 
+
+  // UI COMPONENTS //
+  
+  // SEARCH BAR //
+  const [searchValue, setSearchValue] = useState("");
+
   return (
     <div style={{ width: "100%", height: "100vh" }}>
       <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
 
-      <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
-        <Button onClick={() => alert("Button clicked!")}>
-          Click Me
-        </Button>
+      <div style={{ position: "absolute", top: 20, left: 20, zIndex: 1, width: '400px'}}>
+        <SearchBar
+          placeholder="Search for water fountains..."
+          value={searchValue}
+          onChange={setSearchValue}
+          onSearch={ () => alert(`Searched for: ${searchValue}`)}
+        />
       </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 15,
+          right: 15,
+          display: "flex",
+          flexDirection: "column",
+          zIndex: 1,
+        }}
+      >
+        <button
+          onClick={() => {
+            geolocateRef.current?.trigger();
+          }}
+          style={{
+            width: "50px",
+            height: "50px",
+            background: "white",
+            border: "1px solid #ccc",
+            borderRadius: "15px",
+            fontSize: "20px",
+            cursor: "pointer",
+            marginBottom: "10px", // space between this and zoom buttons
+          }}
+          title="Go to my location"
+        >
+          -
+        </button>
+        <button
+          onClick={() => mapRef.current?.zoomIn()}
+          style={{
+            width: "50px",
+            height: "50px",
+            background: "white",
+            border: "1px solid #ccc",
+            borderBottom: "none", // merge border with button below
+            borderTopLeftRadius: "15px",
+            borderTopRightRadius: "15px",
+            fontSize: "20px",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
+          +
+        </button>
+        <button
+          onClick={() => mapRef.current?.zoomOut()}
+          style={{
+            width: "50px",
+            height: "50px",
+            background: "white",
+            border: "1px solid #ccc",
+            borderTop: "none",
+            borderBottomLeftRadius: "15px",
+            borderBottomRightRadius: "15px",
+            fontSize: "20px",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
+          –
+        </button>
+      </div>
+      <MapScale map={mapRef.current} maxWidth={100} />
     </div>
   );
 }
