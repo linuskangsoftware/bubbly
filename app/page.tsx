@@ -7,6 +7,7 @@ import type { FeatureCollection, Point } from "geojson";
 
 import { SearchBar } from "@/components/Map/Search";
 import { MapScale } from "@/components/Map/Scale";
+import { useTheme, type Theme } from "@/lib/theme"
 
 import {
   ContextMenu,
@@ -24,6 +25,27 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 
+import { 
+  Avatar, 
+  AvatarFallback, 
+  AvatarImage 
+} from "@/components/ui/avatar"
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 type Bubbler = {
   id: number;
   name: string;
@@ -37,6 +59,8 @@ export default function MapPage() {
   const [bubblers, setBubblers] = useState<Bubbler[]>([]);
   const geolocateRef = useRef<maplibregl.GeolocateControl | null>(null);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const { setTheme } = useTheme();
+  const { theme } = useTheme();
 
   // Fetch waypoints
   useEffect(() => {
@@ -46,13 +70,36 @@ export default function MapPage() {
       .catch(console.error);
   }, []);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    map.setStyle(theme === "dark"
+    ? "http://localhost:8080/styles/dark/style.json"
+    : "http://localhost:8080/styles/light/style.json"
+  );
+
+    map.once("styledata", () => {
+      if (map.getStyle()) {
+        map.getStyle().metadata = { theme };
+      }
+    });
+  }, [theme]);
+
+
+  // MAP THEME MANAGER //
+  const getMapStyleUrl = (theme: Theme) => {
+    if (theme === "dark") return "http://localhost:8080/styles/dark/style.json";
+    return "http://localhost:8080/styles/light/style.json";
+  };
+
   // MAP MANAGER //
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: "http://localhost:8080/styles/bubbly/style.json",
+      style: getMapStyleUrl(theme),
       center: [0, 0],
       zoom: 2,
       attributionControl: false,
@@ -289,7 +336,7 @@ export default function MapPage() {
             borderRadius: "15px",
             fontSize: "20px",
             cursor: "pointer",
-            marginBottom: "10px", // space between this and zoom buttons
+            marginBottom: "10px",
           }}
           title="Go to my location"
         >
@@ -302,7 +349,7 @@ export default function MapPage() {
             height: "50px",
             background: "white",
             border: "1px solid #ccc",
-            borderBottom: "none", // merge border with button below
+            borderBottom: "none",
             borderTopLeftRadius: "15px",
             borderTopRightRadius: "15px",
             fontSize: "20px",
@@ -330,6 +377,48 @@ export default function MapPage() {
           –
         </button>
       </div>
+
+      <div
+        style={{
+          position: "absolute",
+          top: 20,
+          right: 20,
+          display: "flex",
+          flexDirection: "column",
+          zIndex: 1,
+        }}
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <Avatar>
+              <AvatarImage src="https://github.com/linuskang.png" />
+              <AvatarFallback>LK</AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuLabel className="font-bold">Linus Kang</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>App Theme</DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem>Sign out</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+      </div>
+
       <MapScale map={mapRef.current} maxWidth={100} />
     </div>
   );

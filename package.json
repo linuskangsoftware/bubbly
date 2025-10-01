@@ -26,6 +26,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "fs": "^0.0.1-security",
+    "geist": "^1.5.1",
     "lucide-react": "^0.544.0",
     "luxon": "^3.7.2",
     "maplibre-gl": "^5.7.3",
