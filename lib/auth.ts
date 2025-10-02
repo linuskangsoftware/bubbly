@@ -68,7 +68,12 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async session({ session, user }) {
       if (session.user) {
-        session.user.id = user.id; // 👈 inject user.id into session
+        session.user.id = user.id;
+        session.user.handle = user.handle;
+        session.user.name = user.name;
+        session.user.email = user.email;
+        session.user.image = user.image;
+        session.user.displayName = user.displayName;
       }
       return session;
     },
