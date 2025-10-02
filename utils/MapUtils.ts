@@ -3,11 +3,11 @@ import type { FeatureCollection, Point } from "geojson";
 import type { Waypoint } from "@/types/types";
 
 export function getMapStyle(themeValue: string) {
-    if (themeValue === "dark") {
-        return "http://localhost:8080/styles/dark/style.json";
-    }
+  if (themeValue === "dark") {
+    return "http://localhost:8080/styles/dark/style.json";
+  }
 
-    return "http://localhost:8080/styles/light/style.json";
+  return "http://localhost:8080/styles/light/style.json";
 }
 
 export function addWaypoints(map: maplibregl.Map, waypoints: Waypoint[]) {
@@ -108,53 +108,78 @@ export function addWaypoints(map: maplibregl.Map, waypoints: Waypoint[]) {
 }
 
 export function loadMap(mapRef: React.MutableRefObject<maplibregl.Map | null>, mapContainerRef: React.RefObject<HTMLDivElement | null>, theme: string) {
-    if (!mapContainerRef) return;
+  if (!mapContainerRef) return;
 
-    if (!mapRef.current && mapContainerRef.current) {
-        mapRef.current = new maplibregl.Map({
-            container: mapContainerRef.current,
-            style: getMapStyle(theme),
-            center: [0, 0],
-            zoom: 1,
-            attributionControl: false,
+  if (!mapRef.current && mapContainerRef.current) {
+    mapRef.current = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: getMapStyle(theme),
+      center: [0, 0],
+      zoom: 1,
+      attributionControl: false,
+    });
+
+    mapRef.current.on("load", () => {
+      console.log("[ Bubbly Maps ] Map Loaded!");
+
+      const params = new URLSearchParams(window.location.search);
+      const lat = parseFloat(params.get("lat") || "");
+      const lng = parseFloat(params.get("lng") || "");
+      const zoom = parseFloat(params.get("zoom") || "");
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        mapRef.current!.flyTo({
+          center: [lng, lat],
+          zoom: !isNaN(zoom) ? zoom : 14,
+          essential: true,
         });
+      }
+    });
 
-        mapRef.current.on("load", () => {
-            console.log("[ Bubbly Maps ] Map Loaded!");
+    mapRef.current.on("moveend", () => {
+      const center = mapRef.current!.getCenter();
+      const zoom = mapRef.current!.getZoom();
+      const params = new URLSearchParams(window.location.search);
 
-            const params = new URLSearchParams(window.location.search);
-            const lat = parseFloat(params.get("lat") || "");
-            const lng = parseFloat(params.get("lng") || "");
-            const zoom = parseFloat(params.get("zoom") || "");
+      params.set("lat", center.lat.toFixed(6));
+      params.set("lng", center.lng.toFixed(6));
+      params.set("zoom", zoom.toFixed(2));
 
-            if (!isNaN(lat) && !isNaN(lng)) {
-                mapRef.current!.flyTo({
-                    center: [lng, lat],
-                    zoom: !isNaN(zoom) ? zoom : 14,
-                    essential: true,
-                });
-            }
-        });
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, "", newUrl);
+    })
 
-        mapRef.current.on("moveend", () => {
-            const center = mapRef.current!.getCenter();
-            const zoom = mapRef.current!.getZoom();
-            const params = new URLSearchParams(window.location.search);
-
-            params.set("lat", center.lat.toFixed(6));
-            params.set("lng", center.lng.toFixed(6));
-            params.set("zoom", zoom.toFixed(2));
-
-            const newUrl = `${window.location.pathname}?${params.toString()}`;
-            window.history.replaceState({}, "", newUrl);
-        })
-
-    } else if (mapRef.current) {
-        mapRef.current.setStyle(getMapStyle(theme));
-    }
+  } else if (mapRef.current) {
+    mapRef.current.setStyle(getMapStyle(theme));
+  }
 }
 
-export function querySearch(query: string) {
-    console.log("Searching for:", query);
-    return query
+export function query(
+  searchValue: string,
+  waypoints: Waypoint[],
+  map: maplibregl.Map | null,
+  onSelect?: (wp: Waypoint) => void
+) {
+  if (!map || !searchValue) return [];
+
+  const lower = searchValue.toLowerCase();
+  const matches = waypoints.filter(wp => wp.name.toLowerCase().includes(lower));
+
+  if (matches.length === 0) return [];
+
+  const first = matches[0];
+  map.flyTo({
+    center: [first.longitude, first.latitude],
+    zoom: 20,
+    essential: true,
+  });
+
+  new maplibregl.Popup()
+    .setLngLat([first.longitude, first.latitude])
+    .setHTML(`<strong>${first.name}</strong>`)
+    .addTo(map);
+
+  if (onSelect) onSelect(first);
+
+  return matches
 }

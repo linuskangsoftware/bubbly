@@ -16,7 +16,7 @@ import { SignInButton } from "@/components/Map/SignIn";
 import { ZoomControl } from "@/components/Map/Zoom";
 
 // util scripts
-import { loadMap, querySearch, addWaypoints } from "@/utils/MapUtils";
+import { loadMap, query, addWaypoints } from "@/utils/MapUtils";
 import { useTheme } from "@/lib/theme";
 
 // types
@@ -33,6 +33,7 @@ export function Map() {
     const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
     // search
     const [searchValue, setSearchValue] = useState("");
+    const [searchResults, setSearchResults] = useState<Waypoint[]>([]);
     // waypoints
     const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
 
@@ -75,6 +76,18 @@ export function Map() {
             });
     }, []);
 
+    // search helpers
+    useEffect(() => {
+        if (!searchValue) {
+            setSearchResults([]);
+            return;
+        }
+        const results = waypoints.filter((wp) =>
+            wp.name.toLowerCase().includes(searchValue.toLowerCase())
+        );
+        setSearchResults(results);
+    }, [searchValue, waypoints]);
+
     return (
         <div className="relative w-full h-screen">
             <div ref={mapContainerRef} className="w-full h-full" />
@@ -85,9 +98,55 @@ export function Map() {
                     className="w-72 md:w-96"
                     value={searchValue}
                     onChange={setSearchValue}
-                    onSearch={() => querySearch(searchValue)}
+                    onSearch={() => {
+                        if (!mapInstance) return;
+
+                        const selected = waypoints.find(
+                            (wp) => wp.name.toLowerCase() === searchValue.toLowerCase()
+                        );
+
+                        if (!selected) return;
+
+                        mapInstance.flyTo({ center: [selected.longitude, selected.latitude], zoom: 14 });
+                        new maplibregl.Popup()
+                            .setLngLat([selected.longitude, selected.latitude])
+                            .setHTML(`<strong>${selected.name}</strong>`)
+                            .addTo(mapInstance);
+
+                        setSearchResults([]);
+                    }}
                 />
             </div>
+
+            {searchResults.length > 0 && (
+                <div className="absolute top-[70px] left-5 w-72 md:w-96 max-h-64 overflow-y-auto
+                  scrollbar-hide
+                  bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700
+                  rounded-xl shadow z-20">
+                    {searchResults.map((wp) => (
+                        <div
+                            key={wp.id}
+                            className="px-4 py-2 cursor-pointer 
+                   bg-white dark:bg-zinc-900 
+                   hover:bg-gray-900 hover:text-white
+                   transition-colors duration-200"
+                            onClick={() => {
+                                if (!mapInstance) return;
+                                mapInstance.flyTo({ center: [wp.longitude, wp.latitude], zoom: 14 });
+                                new maplibregl.Popup()
+                                    .setLngLat([wp.longitude, wp.latitude])
+                                    .setHTML(`<strong>${wp.name}</strong>`)
+                                    .addTo(mapInstance);
+
+                                setSearchResults([]);
+                                setSearchValue(wp.name);
+                            }}
+                        >
+                            {wp.name}
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <div className="absolute top-5 right-5 z-10">
                 {session ? <AvatarManager /> : <SignInButton />}
