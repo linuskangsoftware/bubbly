@@ -1,13 +1,21 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Upload } from "lucide-react"
+import { 
+    Avatar,
+    AvatarFallback,
+    AvatarImage 
+} from "@/components/ui/avatar"
+
+import { Upload, ChevronLeft } from "lucide-react"
+
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 export function Settings() {
     const { data: session } = useSession()
@@ -19,6 +27,8 @@ export function Settings() {
     const [avatarUrl, setAvatarUrl] = useState(session?.user.image ?? "")
 
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const router = useRouter()
 
     // fill ins
     useEffect(() => {
@@ -50,6 +60,16 @@ export function Settings() {
 
     return (
         <section className="space-y-6">
+            <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => router.push("/")}
+            >
+                <ChevronLeft className="h-4 w-4" />
+                Go Back
+            </Button>
+
             <input
                 type="file"
                 accept="image/*"
