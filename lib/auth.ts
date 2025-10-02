@@ -74,6 +74,7 @@ export const authOptions: AuthOptions = {
         session.user.email = user.email;
         session.user.image = user.image;
         session.user.displayName = user.displayName;
+        session.user.bio = user.bio;
       }
       return session;
     },
