@@ -4,10 +4,10 @@ import type { Waypoint } from "@/types/types";
 
 export function getMapStyle(themeValue: string) {
   if (themeValue === "dark") {
-    return "http://localhost:8080/styles/dark/style.json";
+    return "https://tiles.linus.id.au/styles/dark/style.json";
   }
 
-  return "http://localhost:8080/styles/light/style.json";
+  return "https://tiles.linus.id.au/styles/light/style.json";
 }
 
 export function addWaypoints(map: maplibregl.Map, waypoints: Waypoint[]) {

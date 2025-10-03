@@ -1,36 +1,26 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { 
-    Avatar,
-    AvatarFallback,
-    AvatarImage 
-} from "@/components/ui/avatar"
-
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Upload, ChevronLeft } from "lucide-react"
-
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export function Settings() {
-    const { data: session } = useSession()
-
-    // template states
+    const { data: session, update } = useSession()
     const [name, setName] = useState("")
     const [username, setUsername] = useState("")
     const [bio, setBio] = useState("")
     const [avatarUrl, setAvatarUrl] = useState(session?.user.image ?? "")
 
     const fileInputRef = useRef<HTMLInputElement>(null)
-
     const router = useRouter()
 
-    // fill ins
     useEffect(() => {
         if (session?.user) {
             setName(session.user.displayName ?? "")
@@ -40,7 +30,6 @@ export function Settings() {
         }
     }, [session])
 
-    // photo upload handlers
     const handleUploadClick = () => {
         fileInputRef.current?.click()
     }
@@ -50,12 +39,54 @@ export function Settings() {
         if (!file) return
 
         const reader = new FileReader()
-        reader.onload = () => {
-            setAvatarUrl(reader.result as string)
-        }
+        reader.onload = () => setAvatarUrl(reader.result as string)
         reader.readAsDataURL(file)
-
         console.log("Selected file:", file)
+    }
+
+    const handleSave = async () => {
+        try {
+            const res = await fetch("/api/users/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    displayName: name,
+                    handle: username,
+                    bio,
+                    // image skipped until MinIO
+                }),
+            })
+
+            if (!res.ok) {
+                toast("An error occured", {
+                    description: "Failed to update your account settings, please try again later.",
+                    action: {
+                        label: "Dismiss",
+                        onClick: () => console.log("undo")
+                    }
+                })
+                return
+            }
+
+            await update()
+
+            toast("Success", {
+                description: "Your account settings have been updated.",
+                action: {
+                    label: "Dismiss",
+                    onClick: () => console.log("undo")
+                }
+            })
+        } catch (err) {
+            console.error(err)
+            toast("An error occured", {
+                description: "Failed to update your account settings, please try again later.",
+                action: {
+                    label: "Dismiss",
+                    onClick: () => console.log("undo")
+                }
+            })
+        }
     }
 
     return (
@@ -89,15 +120,14 @@ export function Settings() {
                     <Avatar className="h-20 w-20">
                         <AvatarImage src={avatarUrl} alt={name} />
                         <AvatarFallback>
-                            {session?.user.name?.trim()
-                                ? session.user.name
+                            {session?.user.displayName?.trim()
+                                ? session.user.displayName
                                     .split(" ")
                                     .filter(Boolean)
                                     .map((word) => word[0].toUpperCase())
                                     .slice(0, 2)
                                     .join("")
-                                : "U"
-                            }
+                                : "U"}
                         </AvatarFallback>
                     </Avatar>
                     <Button
@@ -147,7 +177,10 @@ export function Settings() {
                     />
                 </div>
 
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer">
+                <Button
+                    onClick={handleSave}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                >
                     Save Changes
                 </Button>
             </div>

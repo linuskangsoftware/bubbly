@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Providers } from "@/components/Provider";
+import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/lib/theme";
 import "./globals.css";
 
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <Providers>{children}</Providers>
+          <Toaster position="top-center"/>
         </ThemeProvider>
       </body>
     </html>
